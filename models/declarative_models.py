@@ -50,7 +50,7 @@ class WorkersOrm(Base):
         return f'{__class__.__name__}(id: {self.id})'
 
 
-class ResumeOrm(Base):
+class ResumesOrm(Base):
 
     __tablename__ = 'resumes'
     __table_args__ = {'comment': 'Резюме'}
