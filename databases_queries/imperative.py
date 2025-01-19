@@ -14,24 +14,24 @@ class CoreSQLRequests(ABC):
     """Примеры CORE SQL-запросов"""
 
     @staticmethod
-    def recreate_tables():
+    async def recreate_tables():
         """Пересоздание таблиц"""
         table_metadata.drop_all(bind=engine)
         table_metadata.create_all(bind=engine)
 
     @staticmethod
     @abstractmethod
-    def insert_data():
+    async def insert_data():
         """Вставка данных"""
 
     @staticmethod
     @abstractmethod
-    def select_data():
+    async def select_data():
         """Выборка данных"""
 
     @staticmethod
     @abstractmethod
-    def update_data():
+    async def update_data():
         """Обновление данных"""
 
 
@@ -39,7 +39,7 @@ class RawSQL(CoreSQLRequests):
     """Примеры сырых SQL-запросов"""
 
     @staticmethod
-    def insert_data():
+    async def insert_data():
         with engine.connect() as conn:
             sql_request = (
                 """insert into workers (username) values ('Bobr') , ('Volk');"""
@@ -48,7 +48,7 @@ class RawSQL(CoreSQLRequests):
             conn.commit()
 
     @staticmethod
-    def select_data():
+    async def select_data():
         with engine.connect() as conn:
             sql_request = """select * from workers;"""
             result = conn.execute(text(sql_request))
@@ -56,7 +56,7 @@ class RawSQL(CoreSQLRequests):
         return workers
 
     @staticmethod
-    def update_data():
+    async def update_data():
         worker_id = 1
         new_username = 'Ivan'
         with engine.connect() as conn:
@@ -71,7 +71,7 @@ class QueryBuilderSQL(CoreSQLRequests):
     """Примеры SQL-запросов на основе query builder"""
 
     @staticmethod
-    def insert_data():
+    async def insert_data():
         """Пример query_builder SQL-запроса"""
         with engine.connect() as conn:
             sql_request = insert(workers_table).values(
@@ -81,7 +81,7 @@ class QueryBuilderSQL(CoreSQLRequests):
             conn.commit()
 
     @staticmethod
-    def select_data():
+    async def select_data():
         with engine.connect() as conn:
             query = select(workers_table)
             query_result = conn.execute(query)
@@ -89,7 +89,7 @@ class QueryBuilderSQL(CoreSQLRequests):
         return workers
 
     @staticmethod
-    def update_data():
+    async def update_data():
         worker_id = 1
         new_username = 'Ivan'
         with engine.connect() as conn:
@@ -102,10 +102,10 @@ class QueryBuilderSQL(CoreSQLRequests):
             conn.commit()
 
 
-def apply_queries():
+async def apply_queries():
     """Применение методов CoreSQLRequests"""
     for class_obj in CoreSQLRequests.__subclasses__():
-        class_obj.recreate_tables()
-        class_obj.insert_data()
-        class_obj.update_data()
+        await class_obj.recreate_tables()
+        await class_obj.insert_data()
+        await class_obj.update_data()
         print(class_obj.select_data())

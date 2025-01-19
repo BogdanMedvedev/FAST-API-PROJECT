@@ -11,8 +11,8 @@ core_router = APIRouter()
     tags=['Работники'],
     summary='Получение списка работников'
 )
-def get_workers():
-    return DeclarativeSQLQuery.convert_workers_to_dto()
+async def get_workers():
+    return await DeclarativeSQLQuery.convert_workers_to_dto()
 
 
 @core_router.get(
@@ -20,8 +20,8 @@ def get_workers():
     tags=['Работники'],
     summary='Получение списка резюме'
 )
-def get_workers():
-    return DeclarativeSQLQuery.select_resumes_with_all_relationships()
+async def get_workers():
+    return await DeclarativeSQLQuery.select_resumes_with_all_relationships()
 
 
 # @app.post(
