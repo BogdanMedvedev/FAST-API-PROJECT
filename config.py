@@ -13,6 +13,7 @@ class DatabasesSettings(BaseSettings):
     class Config:
         env_prefix = 'DB_'
         case_sensitive = False
+        env_file = ".env"
 
     @property
     def database_url(self) -> str:

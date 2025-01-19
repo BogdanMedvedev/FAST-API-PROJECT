@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from sqlalchemy import text, insert, select, update
 
-from databases import engine
+from databases_queries import engine
 from models.imperative_models import table_metadata, workers_table
 
 
@@ -109,7 +109,3 @@ def apply_queries():
         class_obj.insert_data()
         class_obj.update_data()
         print(class_obj.select_data())
-
-
-apply_queries()
-

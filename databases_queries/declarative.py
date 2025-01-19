@@ -2,23 +2,24 @@
 Примеры ORM SQL-запросов
 """
 from sqlalchemy import select, func, Integer, and_, insert
-from sqlalchemy.orm import sessionmaker, aliased
-from databases import engine
-from models.declarative_models import WorkersOrm, Base, ResumesOrm
+from sqlalchemy.orm import sessionmaker, aliased, selectinload, contains_eager, joinedload
+from databases_queries import engine
+from models.declarative_models import WorkersOrm, Base, ResumesOrm, VacanciesOrm
 from models.enums import WorkLoad
+from models.schemas import WorkersRelDTO, M2MResumesVacanciesDTO
 
 # сессия для взаимодействия с БД
 session_factory = sessionmaker(engine)
 
 
-class DeclarativeSQLRequests:
+class DeclarativeSQLQuery:
     """Примеры SQL-запросов с помощью ORM"""
 
     @staticmethod
     def recreate_tables():
         """Пересоздание таблиц"""
-        Base.metadata.drop_all(bind=engine)
-        Base.metadata.create_all(bind=engine)
+        Base.metadata.drop_all(bind=engine, )
+        # Base.metadata.create_all(bind=engine)
 
     @staticmethod
     def insert_data():
@@ -160,10 +161,86 @@ class DeclarativeSQLRequests:
             worker_obj.username = new_username
             session.commit()
 
+    @staticmethod
+    def select_workers_with_selectin_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkersOrm)
+                .options(selectinload(WorkersOrm.resumes))
+            )
 
-DeclarativeSQLRequests.recreate_tables()
-DeclarativeSQLRequests.insert_data()
-DeclarativeSQLRequests.update_data()
-DeclarativeSQLRequests.select_data()
-DeclarativeSQLRequests.insert_additional_resumes()
-DeclarativeSQLRequests.join_cte_subquery_window_func()
+            res = session.execute(query)
+            result = res.scalars().all()
+            print(result)
+            worker_1_resumes = result[3].resumes
+            print(worker_1_resumes)
+
+            worker_2_resumes = result[4].resumes
+            print(worker_2_resumes)
+
+    @staticmethod
+    def select_workers_with_condition_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkersOrm)
+                .options(selectinload(WorkersOrm.resumes_parttime))
+                .options(selectinload(WorkersOrm.resumes_fulltime))
+            )
+            res = session.execute(query).scalars().all()
+            print(f'{res=}')
+
+    @staticmethod
+    def select_workers_with_condition_relationship_contains_eager():
+        """Вывод только тех сотрудников, у которых есть резюме c PARTTIME"""
+        with session_factory() as session:
+            query = (
+                select(WorkersOrm)
+                .join(WorkersOrm.resumes)
+                .options(contains_eager(WorkersOrm.resumes))
+                .filter(ResumesOrm.workload == WorkLoad.PARTTIME)
+            )
+
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(result)
+
+    @staticmethod
+    def convert_workers_to_dto():
+        with session_factory() as session:
+            query = (
+                select(WorkersOrm)
+                .options(selectinload(WorkersOrm.resumes))
+                .limit(3)
+            )
+
+            res = session.execute(query)
+            result_orm = res.scalars().all()
+            print(f"{result_orm=}")
+            result_dto = [WorkersRelDTO.model_validate(row, from_attributes=True) for row in result_orm]
+            print(f"{result_dto=}")
+            return result_dto
+
+    @staticmethod
+    def add_vacancies_and_replies():
+        with session_factory() as session:
+            new_vacancy = VacanciesOrm(title="Python разработчик", compensation=100000)
+            resume_1 = session.get(ResumesOrm, 1)
+            resume_2 = session.get(ResumesOrm, 2)
+            resume_1.vacancies_replied.append(new_vacancy)
+            resume_2.vacancies_replied.append(new_vacancy)
+            session.commit()
+
+    @staticmethod
+    def select_resumes_with_all_relationships():
+        with session_factory() as session:
+            query = (
+                select(ResumesOrm)
+                .options(joinedload(ResumesOrm.worker))
+                .options(selectinload(ResumesOrm.vacancies_replied).load_only(VacanciesOrm.title))
+            )
+
+            res = session.execute(query)
+            result_orm = res.unique().scalars().all()
+            result_dto = [M2MResumesVacanciesDTO.model_validate(row, from_attributes=True) for row in result_orm]
+            print(f"{result_dto=}")
+            return result_dto
